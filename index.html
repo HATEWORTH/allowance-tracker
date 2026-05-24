@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0E0E0E" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Allowance — Track &amp; Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Auth overlay (login / first-run setup) -->
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="auth-card" data-auth-view="setup" hidden>
+    <div class="brand-mark brand-mark--big">$</div>
+    <h2 class="auth-title">Set up Allowance</h2>
+    <p class="auth-sub" id="setupSub">Pick a 4-digit Parent PIN.</p>
+    <div class="pin-dots" id="setupDots"><span></span><span></span><span></span><span></span></div>
+    <div class="pin-pad" id="setupPad"></div>
+  </div>
+  <div class="auth-card" data-auth-view="login" hidden>
+    <div class="brand-mark brand-mark--big">$</div>
+    <h2 class="auth-title">Who's here?</h2>
+    <div class="role-picker" id="loginAccounts"></div>
+    <div class="login-pin" hidden id="loginPinSection">
+      <p class="auth-sub" id="loginSub">Enter Parent PIN</p>
+      <div class="pin-dots" id="loginDots"><span></span><span></span><span></span><span></span></div>
+      <div class="pin-pad" id="loginPad"></div>
+      <button class="pin-back" id="loginBack" type="button">← back</button>
+    </div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">$</span>
+    <span class="brand-name">Allowance</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab is-active" data-page="dashboard">Today</button>
+    <button class="tab" data-page="insights">Insights</button>
+    <button class="tab parent-only" data-page="family">Family</button>
+  </nav>
+  <div class="topbar-actions">
+    <button class="pill pill--child-sel parent-only" data-action="switch-child" id="childSelector" type="button" hidden>
+      <span id="childSelEmoji">🧒</span>
+      <span id="childSelName">Kid</span>
+      <span class="pill-caret">▾</span>
+    </button>
+    <button class="pill parent-only" data-action="export">Export</button>
+    <button class="pill parent-only" data-action="import">Import</button>
+    <button class="pill parent-only" data-action="open-settings">Settings</button>
+    <button class="pill pill--role" data-action="logout" id="rolePill" type="button">
+      <span id="roleEmoji">🧑</span>
+      <span id="roleName">Parent</span>
+    </button>
+  </div>
+</header>
+<input id="importFile" type="file" accept="application/json" hidden />
+
+<main>
+
+<!-- ============ DASHBOARD ============ -->
+<section class="page" data-page="dashboard">
+<div class="grid">
+
+  <!-- Approval queue (parent-only, hidden when no pending) -->
+  <section class="card card--approvals parent-only" data-color="yellow" id="approvalsCard" hidden>
+    <div class="approvals-head">
+      <div>
+        <div class="kicker">Needs approval</div>
+        <div class="approvals-count" id="approvalsCount">0 pending</div>
+      </div>
+      <div class="approvals-bulk">
+        <button class="pill pill--dark" data-action="approve-all" id="approveAllBtn" type="button">Approve all</button>
+        <button class="pill pill--ghost" data-action="reject-all" id="rejectAllBtn" type="button">Reject all</button>
+      </div>
+    </div>
+    <ul class="approvals" id="approvalsList"></ul>
+  </section>
+
+  <!-- Pending submissions (child-only) -->
+  <section class="card card--pending child-only" data-color="yellow" id="pendingCard" hidden>
+    <div class="kicker">Waiting for parent</div>
+    <div class="pending-count" id="pendingCount">0 pending</div>
+    <ul class="approvals" id="pendingList"></ul>
+  </section>
+
+  <!-- Day header -->
+  <section class="card card--day" data-color="cream">
+    <div class="day-name" id="dayName">Monday</div>
+    <div class="day-date" id="dayDate">March 17th</div>
+    <div class="day-tag">Allowance tracker</div>
+  </section>
+
+  <!-- Top action pills -->
+  <section class="card card--bare actions parent-only">
+    <button class="pill" data-action="reset">Reset</button>
+    <button class="pill pill--solid" data-action="payday">+ Payday</button>
+  </section>
+
+  <!-- Hero balance -->
+  <section class="card card--balance" data-color="yellow">
+    <div class="kicker">Balance</div>
+    <div class="balance" id="balanceDisplay">$0.00</div>
+    <div class="balance-row">
+      <div>
+        <div class="kicker kicker--sm">Earned</div>
+        <div class="stat stat--green" id="earnedTotal">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Spent</div>
+        <div class="stat stat--red" id="spentTotal">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Saved</div>
+        <div class="stat" id="savedTotal">$0</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Weekly allowance progress -->
+  <section class="card card--week" data-color="orange">
+    <div class="kicker">Weekly allowance</div>
+    <div class="week-amount" id="weekAmount">$10</div>
+    <div class="meter">
+      <div class="meter-track">
+        <div class="meter-fill" id="weekFill"></div>
+      </div>
+      <div class="meter-labels">
+        <span id="weekProgressLabel">0 / 7 days</span>
+        <span id="nextPaydayLabel">Next: —</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick add -->
+  <section class="card card--add" data-color="pink">
+    <div class="kicker">Log a transaction</div>
+    <div class="seg" role="tablist">
+      <button class="seg-btn is-active" data-type="earn" type="button">Earned</button>
+      <button class="seg-btn" data-type="spend" type="button">Spent</button>
+    </div>
+    <div class="add-row">
+      <div class="amount-input">
+        <span class="amount-prefix">$</span>
+        <input id="addAmount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+      </div>
+      <select id="addCategory" class="select"></select>
+    </div>
+    <input id="addNote" class="text-input" placeholder="Note (optional)" />
+    <input id="addDate" class="text-input parent-only" type="date" />
+    <button class="btn-big" id="addSubmit" type="button">Add to log →</button>
+  </section>
+
+  <!-- Savings goal -->
+  <section class="card card--goal" data-color="purple">
+    <div class="kicker">Savings goal</div>
+    <div class="goal-name" id="goalName">New skateboard</div>
+    <div class="goal-amount">
+      <span id="goalSaved">$0</span>
+      <span class="goal-total" id="goalTotal">/ $80</span>
+    </div>
+    <div class="meter">
+      <div class="meter-track meter-track--dark">
+        <div class="meter-fill meter-fill--dark" id="goalFill"></div>
+      </div>
+      <div class="meter-labels">
+        <span id="goalPercent">0%</span>
+        <span id="goalEta">~ — weeks to go</span>
+      </div>
+    </div>
+    <div class="goal-actions">
+      <button class="pill pill--dark parent-only" data-action="edit-goal" type="button">Edit goal</button>
+      <button class="pill pill--dark" data-action="stash" type="button">+ Stash $1</button>
+    </div>
+  </section>
+
+  <!-- Chore calculator -->
+  <section class="card card--calc" data-color="blue">
+    <div class="kicker">Chore calculator</div>
+    <div class="calc-row">
+      <label>Chores</label>
+      <input id="calcChores" type="number" min="0" value="5" />
+    </div>
+    <div class="calc-row">
+      <label>$ each</label>
+      <input id="calcRate" type="number" min="0" step="0.25" value="1.50" />
+    </div>
+    <div class="calc-result">
+      <div class="kicker kicker--sm">If you finish</div>
+      <div class="calc-big" id="calcResult">$7.50</div>
+    </div>
+    <button class="btn-big btn-big--invert" id="calcLog" type="button">Log as earned</button>
+  </section>
+
+  <!-- Spending breakdown -->
+  <section class="card card--cats" data-color="cream">
+    <div class="kicker">Where it went</div>
+    <ul class="cats" id="catsList">
+      <li class="cats-empty">No spending yet.</li>
+    </ul>
+  </section>
+
+  <!-- Calendar -->
+  <section class="card card--cal" data-color="dark">
+    <div class="cal-head">
+      <span id="calMonth">March</span>
+      <span class="cal-year" id="calYear">2026</span>
+    </div>
+    <div class="cal-dow">
+      <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+
+  <!-- Transactions log -->
+  <section class="card card--log" data-color="cream">
+    <div class="log-head">
+      <div>
+        <div class="kicker">Statements</div>
+        <div class="log-hint parent-only">Tap a row to edit</div>
+      </div>
+      <button class="pill pill--ghost parent-only" data-action="clear-log" type="button">Clear</button>
+    </div>
+    <ul class="log" id="logList">
+      <li class="log-empty">Nothing logged yet.</li>
+    </ul>
+  </section>
+
+</div>
+</section>
+
+<!-- ============ INSIGHTS ============ -->
+<section class="page is-hidden" data-page="insights">
+<div class="insights-grid">
+
+  <section class="card card--ihead" data-color="cream">
+    <div class="kicker">Insights</div>
+    <h1 class="insights-title">Your money trail</h1>
+    <div class="seg seg--periods" id="periodSeg">
+      <button class="seg-btn is-active" data-period="week" type="button">Week</button>
+      <button class="seg-btn" data-period="month" type="button">Month</button>
+      <button class="seg-btn" data-period="year" type="button">Year</button>
+    </div>
+    <div class="ihead-range" id="iRangeLabel">—</div>
+  </section>
+
+  <section class="card card--isum" data-color="yellow">
+    <div class="kicker">This <span id="periodLabel">week</span></div>
+    <div class="isum-grid">
+      <div>
+        <div class="kicker kicker--sm">Earned</div>
+        <div class="big-num big-num--green" id="iEarned">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Spent</div>
+        <div class="big-num big-num--red" id="iSpent">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Net</div>
+        <div class="big-num" id="iNet">$0</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card card--chart" data-color="orange">
+    <div class="chart-head">
+      <div class="kicker">Earned vs spent</div>
+      <div class="chart-legend">
+        <span><span class="dot dot--green"></span>Earned</span>
+        <span><span class="dot dot--red"></span>Spent</span>
+      </div>
+    </div>
+    <div class="chart-wrap"><svg id="chartBars" class="chart" preserveAspectRatio="none"></svg></div>
+  </section>
+
+  <section class="card card--chart" data-color="pink">
+    <div class="kicker">Top categories</div>
+    <ul class="cats" id="iCats">
+      <li class="cats-empty">No data for this period.</li>
+    </ul>
+  </section>
+
+  <section class="card card--chart" data-color="purple">
+    <div class="kicker">Running balance</div>
+    <div class="chart-wrap"><svg id="chartLine" class="chart" preserveAspectRatio="none"></svg></div>
+  </section>
+
+  <section class="card card--alltime" data-color="dark">
+    <div class="kicker">All time</div>
+    <div class="alltime">
+      <div>
+        <div class="kicker kicker--sm">Transactions</div>
+        <div class="big-num" id="atTxns">0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Earned</div>
+        <div class="big-num big-num--green" id="atEarned">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Spent</div>
+        <div class="big-num big-num--red" id="atSpent">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Saved</div>
+        <div class="big-num" id="atSaved">$0</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">First entry</div>
+        <div class="alltime-date" id="atFirst">—</div>
+      </div>
+      <div>
+        <div class="kicker kicker--sm">Days tracked</div>
+        <div class="big-num" id="atDays">0</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</section>
+
+<!-- ============ FAMILY (parent) ============ -->
+<section class="page is-hidden parent-only" data-page="family">
+<div class="family-grid">
+
+  <section class="card card--fhead" data-color="cream">
+    <div class="kicker">Family</div>
+    <h1 class="insights-title">Manage kids &amp; admin</h1>
+    <div class="ihead-range">Add kids, set PINs, lock accounts, adjust balances, audit activity.</div>
+  </section>
+
+  <section class="card card--kids" data-color="orange">
+    <div class="kids-head">
+      <div class="kicker">Kids</div>
+      <button class="pill pill--dark" data-action="add-kid" type="button">+ Add kid</button>
+    </div>
+    <ul class="kids-list" id="childrenList"></ul>
+  </section>
+
+  <section class="card card--admin" data-color="purple">
+    <div class="kicker">Admin tools</div>
+    <p class="admin-sub">Operate on the kid you're currently viewing.</p>
+    <div class="admin-grid">
+      <button class="btn-big" data-action="adjust-balance" type="button">Adjust balance →</button>
+      <button class="btn-big" data-action="payday" type="button">Run payday now →</button>
+      <button class="btn-big btn-big--invert" data-action="approve-all" type="button">Approve all pending</button>
+      <button class="btn-big btn-big--invert" data-action="reject-all" type="button">Reject all pending</button>
+      <button class="btn-big btn-big--invert" data-action="export" type="button">Export everything</button>
+      <button class="btn-big btn-big--invert" data-action="import" type="button">Import file</button>
+    </div>
+  </section>
+
+  <section class="card card--activity" data-color="cream">
+    <div class="activity-head">
+      <div class="kicker">Activity log</div>
+      <button class="pill pill--ghost" data-action="clear-activity" type="button">Clear</button>
+    </div>
+    <ul class="activity-list" id="activityList">
+      <li class="log-empty">No activity yet.</li>
+    </ul>
+  </section>
+
+</div>
+</section>
+
+</main>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Settings modal (parent PIN only) -->
+<dialog id="settingsModal" class="modal">
+  <form method="dialog" class="modal-inner">
+    <div class="kicker">Settings</div>
+    <h2 class="modal-title">Parent account</h2>
+    <label class="field">
+      <span>New Parent PIN (4 digits, blank to keep)</span>
+      <input id="setParentPin" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="••••" />
+    </label>
+    <p class="modal-hint">Per-kid weekly amount, payday, goal, and PIN now live in <strong>Family → Edit</strong>.</p>
+    <div class="modal-actions">
+      <button class="pill pill--solid" id="saveSettings" type="button">Save</button>
+      <button class="pill" id="settingsCancel" type="button">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Kid edit modal -->
+<dialog id="kidModal" class="modal">
+  <form method="dialog" class="modal-inner">
+    <div class="kicker">Kid profile</div>
+    <h2 class="modal-title" id="kidModalTitle">Edit kid</h2>
+
+    <div class="field-row">
+      <label class="field field--grow">
+        <span>Name</span>
+        <input id="kidName" type="text" placeholder="Lily" />
+      </label>
+      <label class="field field--small">
+        <span>Emoji</span>
+        <input id="kidEmoji" type="text" maxlength="4" placeholder="🦄" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field field--grow">
+        <span>Weekly allowance ($)</span>
+        <input id="kidWeekly" type="number" min="0" step="0.5" />
+      </label>
+      <label class="field field--grow">
+        <span>Payday</span>
+        <select id="kidPayday">
+          <option value="0">Sunday</option>
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field field--grow">
+        <span>Goal name</span>
+        <input id="kidGoalName" type="text" placeholder="Skateboard" />
+      </label>
+      <label class="field field--grow">
+        <span>Goal amount ($)</span>
+        <input id="kidGoalTotal" type="number" min="0" step="1" />
+      </label>
+    </div>
+
+    <label class="field">
+      <span>PIN (4 digits, blank to keep, "clear" to remove)</span>
+      <input id="kidPin" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="••••" />
+    </label>
+
+    <label class="field field--check">
+      <input id="kidLocked" type="checkbox" />
+      <span>Lock account (blocks login until unlocked)</span>
+    </label>
+
+    <div class="modal-actions modal-actions--spread">
+      <button class="pill pill--reject" id="kidDelete" type="button" hidden>Delete kid</button>
+      <div class="modal-actions">
+        <button class="pill" id="kidCancel" type="button">Cancel</button>
+        <button class="pill pill--solid" id="kidSave" type="button">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Transaction edit modal (parent admin) -->
+<dialog id="txnModal" class="modal">
+  <form method="dialog" class="modal-inner">
+    <div class="kicker">Transaction</div>
+    <h2 class="modal-title">Edit transaction</h2>
+
+    <div class="field-row">
+      <label class="field field--grow">
+        <span>Type</span>
+        <select id="txnType">
+          <option value="earn">Earned (+)</option>
+          <option value="spend">Spent (−)</option>
+        </select>
+      </label>
+      <label class="field field--grow">
+        <span>Amount ($)</span>
+        <input id="txnAmount" type="number" min="0" step="0.01" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field field--grow">
+        <span>Category</span>
+        <input id="txnCategory" type="text" />
+      </label>
+      <label class="field field--grow">
+        <span>Status</span>
+        <select id="txnStatus">
+          <option value="approved">Approved</option>
+          <option value="pending">Pending</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Note</span>
+      <input id="txnNote" type="text" />
+    </label>
+
+    <label class="field">
+      <span>Date</span>
+      <input id="txnDate" type="date" />
+    </label>
+
+    <div class="modal-actions modal-actions--spread">
+      <button class="pill pill--reject" id="txnDelete" type="button">Delete</button>
+      <div class="modal-actions">
+        <button class="pill" id="txnCancel" type="button">Cancel</button>
+        <button class="pill pill--solid" id="txnSave" type="button">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Adjust balance modal -->
+<dialog id="adjustModal" class="modal">
+  <form method="dialog" class="modal-inner">
+    <div class="kicker">Manual adjustment</div>
+    <h2 class="modal-title">Adjust <span id="adjustChildName">balance</span></h2>
+    <p class="modal-hint">Use a negative amount to deduct (e.g. -5).</p>
+    <label class="field">
+      <span>Amount ($)</span>
+      <input id="adjustAmount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </label>
+    <label class="field">
+      <span>Note</span>
+      <input id="adjustNote" type="text" placeholder="Bank reset, lost cash, gift…" />
+    </label>
+    <div class="modal-actions">
+      <button class="pill" id="adjustCancel" type="button">Cancel</button>
+      <button class="pill pill--solid" id="adjustSave" type="button">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Child picker modal -->
+<dialog id="pickerModal" class="modal">
+  <form method="dialog" class="modal-inner">
+    <div class="kicker">Switch kid</div>
+    <h2 class="modal-title">Who are you managing?</h2>
+    <div class="picker-list" id="pickerList"></div>
+    <div class="modal-actions">
+      <button class="pill" id="pickerCancel" type="button">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Supabase client (sync between phones) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  window.__SB_CONFIG__ = {
+    url: "https://iqvhfkxkwwcmqhtedjwh.supabase.co",
+    key: "sb_publishable_RghdjRmkO3GO7_NkLvwElA_WbqI991u"
+  };
+  try { window.sb = window.supabase.createClient(__SB_CONFIG__.url, __SB_CONFIG__.key); }
+  catch (e) { console.error("Supabase init failed:", e); window.sb = null; }
+</script>
+<script src="app.js"></script>
+</body>
+</html>
