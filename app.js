@@ -325,27 +325,6 @@
     }
   };
 
-  let __RT_CHANNEL = null;
-  let __RT_DEBOUNCE = null;
-  const subscribeRealtime = () => {
-    if (!SB_READY()) return;
-    if (__RT_CHANNEL) { try { window.sb.removeChannel(__RT_CHANNEL); } catch {} }
-    const onChange = () => {
-      // Debounce hydrate so a burst of changes only causes one fetch
-      clearTimeout(__RT_DEBOUNCE);
-      __RT_DEBOUNCE = setTimeout(async () => {
-        await hydrateFromSupabase();
-        applyRole();
-        renderAll();
-      }, 250);
-    };
-    __RT_CHANNEL = window.sb.channel("family:" + state.familyCode)
-      .on("postgres_changes", { event: "*", schema: "public", table: "families",     filter: `code=eq.${state.familyCode}` }, onChange)
-      .on("postgres_changes", { event: "*", schema: "public", table: "children",     filter: `family_code=eq.${state.familyCode}` }, onChange)
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions", filter: `family_code=eq.${state.familyCode}` }, onChange)
-      .on("postgres_changes", { event: "*", schema: "public", table: "activity",     filter: `family_code=eq.${state.familyCode}` }, onChange)
-      .subscribe();
-  };
 
   /* ===========================================================
      RENDER: DASHBOARD
@@ -1239,7 +1218,6 @@
       for (const c of state.children) await syncChild(c);
       if (state.txns.length) await syncTxnBatch(state.txns);
       $("#familyCodeShow").textContent = code;
-      subscribeRealtime();
       showAuth("family-show");
     } catch (e) {
       alert("Couldn't reach cloud: " + e.message + "\nYou can try again from Family → Enable cloud sync.");
@@ -1262,7 +1240,6 @@
       const ok = await hydrateFromSupabase();
       if (!ok) { alert("Couldn't load family data."); return; }
       save();
-      subscribeRealtime();
       postFamilySetup();
     } catch (e) {
       alert("Couldn't join: " + e.message);
@@ -1387,7 +1364,6 @@
     if (!state.familyCode && !state.syncSkipped) { startFamilyChoice(); return; }
     if (state.familyCode) {
       await hydrateFromSupabase();
-      subscribeRealtime();
     }
     if (!state.auth.activeRole) startLogin();
     else { ensureActiveChild(); applyRole(); hideAuth(); renderAll(); }
