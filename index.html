@@ -39,7 +39,7 @@
   <div class="auth-card" data-auth-view="family-choice" hidden>
     <div class="brand-mark brand-mark--big">$</div>
     <h2 class="auth-title">Link your phones</h2>
-    <p class="auth-sub">Sync between your phone and the kid's, live.</p>
+    <p class="auth-sub">Sync between your phone and the kid's.</p>
     <div class="role-picker">
       <button class="role-btn" data-action="family-new" type="button">
         <span class="role-emoji">✨</span>
@@ -96,9 +96,6 @@
       <span id="childSelName">Kid</span>
       <span class="pill-caret">▾</span>
     </button>
-    <button class="pill parent-only" data-action="export">Export</button>
-    <button class="pill parent-only" data-action="import">Import</button>
-    <button class="pill parent-only" data-action="open-settings">Settings</button>
     <button class="pill pill--role" data-action="logout" id="rolePill" type="button">
       <span id="roleEmoji">🧑</span>
       <span id="roleName">Parent</span>
@@ -139,7 +136,6 @@
   <section class="card card--day" data-color="cream">
     <div class="day-name" id="dayName">Monday</div>
     <div class="day-date" id="dayDate">March 17th</div>
-    <div class="day-tag">Allowance tracker</div>
   </section>
 
   <!-- Top action pills -->
@@ -387,6 +383,15 @@
         <button class="pill pill--ghost" data-action="family-enable" id="familyEnableBtn" type="button" hidden>Enable cloud sync</button>
       </div>
     </div>
+    <div class="family-bar">
+      <div class="family-bar-info">
+        <span class="kicker kicker--sm">Parent PIN</span>
+        <input id="setParentPin" class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="Change PIN" />
+      </div>
+      <div class="family-bar-actions">
+        <button class="pill pill--solid" data-action="save-parent-pin" type="button">Save</button>
+      </div>
+    </div>
   </section>
 
   <section class="card card--kids" data-color="orange">
@@ -403,8 +408,6 @@
     <div class="admin-grid">
       <button class="btn-big" data-action="adjust-balance" type="button">Adjust balance →</button>
       <button class="btn-big" data-action="payday" type="button">Run payday now →</button>
-      <button class="btn-big btn-big--invert" data-action="approve-all" type="button">Approve all pending</button>
-      <button class="btn-big btn-big--invert" data-action="reject-all" type="button">Reject all pending</button>
       <button class="btn-big btn-big--invert" data-action="export" type="button">Export everything</button>
       <button class="btn-big btn-big--invert" data-action="import" type="button">Import file</button>
     </div>
@@ -426,23 +429,6 @@
 </main>
 
 <!-- ============ MODALS ============ -->
-
-<!-- Settings modal (parent PIN only) -->
-<dialog id="settingsModal" class="modal">
-  <form method="dialog" class="modal-inner">
-    <div class="kicker">Settings</div>
-    <h2 class="modal-title">Parent account</h2>
-    <label class="field">
-      <span>New Parent PIN (4 digits, blank to keep)</span>
-      <input id="setParentPin" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="••••" />
-    </label>
-    <p class="modal-hint">Per-kid weekly amount, payday, goal, and PIN now live in <strong>Family → Edit</strong>.</p>
-    <div class="modal-actions">
-      <button class="pill pill--solid" id="saveSettings" type="button">Save</button>
-      <button class="pill" id="settingsCancel" type="button">Cancel</button>
-    </div>
-  </form>
-</dialog>
 
 <!-- Kid edit modal -->
 <dialog id="kidModal" class="modal">

@@ -879,8 +879,8 @@
         renderAll();
       }
     }
-    else if (action === "open-settings") openSettings();
     else if (action === "edit-goal" && c) openKidEdit(c.id);
+    else if (action === "save-parent-pin") saveParentPin();
     else if (action === "stash" && c) addTxnFor(c.id, "earn", 1, "savings", "Stashed $1");
     else if (action === "clear-log") {
       if (confirm("Clear ALL transactions across ALL kids?")) {
@@ -989,25 +989,20 @@
     e.target.value = "";
   });
 
-  /* ---------- Settings modal ---------- */
-  const modal = $("#settingsModal");
-  const openSettings = () => {
+  /* ---------- Parent PIN (inline on Family page) ---------- */
+  const saveParentPin = async () => {
     if (state.auth.activeRole !== "parent") return;
-    $("#setParentPin").value = "";
-    modal.showModal();
+    const input = $("#setParentPin");
+    const np = input.value.trim();
+    if (!np) { alert("Enter a new 4-digit PIN, or leave blank to keep the current one."); return; }
+    if (!/^\d{4}$/.test(np)) { alert("Parent PIN must be 4 digits."); return; }
+    state.auth.parentPin = await hashPin(np);
+    logActivity("changed parent PIN", { summary: "" });
+    syncFamily();
+    save();
+    input.value = "";
+    alert("Parent PIN updated.");
   };
-  $("#saveSettings").addEventListener("click", async (e) => {
-    e.preventDefault();
-    const np = $("#setParentPin").value.trim();
-    if (np && !/^\d{4}$/.test(np)) { alert("Parent PIN must be 4 digits."); return; }
-    if (np) {
-      state.auth.parentPin = await hashPin(np);
-      logActivity("changed parent PIN", { summary: "" });
-      syncFamily();
-    }
-    save(); renderAll(); modal.close();
-  });
-  $("#settingsCancel").addEventListener("click", (e) => { e.preventDefault(); modal.close(); });
 
   /* ---------- Kid edit modal ---------- */
   const kidModal = $("#kidModal");
