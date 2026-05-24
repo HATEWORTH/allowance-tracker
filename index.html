@@ -34,6 +34,50 @@
       <button class="pin-back" id="loginBack" type="button">← back</button>
     </div>
   </div>
+
+  <!-- Family choice (after parent setup, before login) -->
+  <div class="auth-card" data-auth-view="family-choice" hidden>
+    <div class="brand-mark brand-mark--big">$</div>
+    <h2 class="auth-title">Link your phones</h2>
+    <p class="auth-sub">Sync between your phone and the kid's, live.</p>
+    <div class="role-picker">
+      <button class="role-btn" data-action="family-new" type="button">
+        <span class="role-emoji">✨</span>
+        <span class="role-label">New family</span>
+      </button>
+      <button class="role-btn role-btn--child" data-action="family-join-open" type="button">
+        <span class="role-emoji">🔗</span>
+        <span class="role-label">Join existing</span>
+      </button>
+    </div>
+    <button class="pin-back" data-action="family-skip" type="button">Skip — this phone only</button>
+  </div>
+
+  <!-- Show new family code -->
+  <div class="auth-card" data-auth-view="family-show" hidden>
+    <div class="brand-mark brand-mark--big">$</div>
+    <h2 class="auth-title">Family created</h2>
+    <p class="auth-sub">Type this code on the kid's phone to link them.</p>
+    <div class="family-code" id="familyCodeShow">XXXXXX</div>
+    <button class="role-btn role-btn--wide" data-action="family-show-copy" type="button">
+      <span class="role-label">Copy code</span>
+    </button>
+    <button class="role-btn role-btn--wide" data-action="family-show-done" type="button">
+      <span class="role-label">Continue →</span>
+    </button>
+  </div>
+
+  <!-- Join existing family -->
+  <div class="auth-card" data-auth-view="family-join" hidden>
+    <div class="brand-mark brand-mark--big">$</div>
+    <h2 class="auth-title">Enter family code</h2>
+    <p class="auth-sub">Type the code from the parent's phone.</p>
+    <input id="familyJoinCode" class="family-code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCDEF" maxlength="10" />
+    <button class="role-btn role-btn--wide" data-action="family-join-submit" type="button">
+      <span class="role-label">Link to family</span>
+    </button>
+    <button class="pin-back" data-action="family-back" type="button">← back</button>
+  </div>
 </div>
 
 <header class="topbar">
@@ -333,6 +377,16 @@
     <div class="kicker">Family</div>
     <h1 class="insights-title">Manage kids &amp; admin</h1>
     <div class="ihead-range">Add kids, set PINs, lock accounts, adjust balances, audit activity.</div>
+    <div class="family-bar" id="familyBar">
+      <div class="family-bar-info">
+        <span class="kicker kicker--sm">Family code</span>
+        <span class="family-bar-code" id="familyBarCode">—</span>
+      </div>
+      <div class="family-bar-actions">
+        <button class="pill" data-action="family-copy" id="familyCopyBtn" type="button">Copy</button>
+        <button class="pill pill--ghost" data-action="family-enable" id="familyEnableBtn" type="button" hidden>Enable cloud sync</button>
+      </div>
+    </div>
   </section>
 
   <section class="card card--kids" data-color="orange">

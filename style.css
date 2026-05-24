@@ -1325,3 +1325,74 @@ body.is-auth .topbar, body.is-auth main { display: none !important; }
   .topbar-actions .pill[data-action="export"],
   .topbar-actions .pill[data-action="import"] { display: none; }
 }
+
+/* ====== Family link (auth screens + Family tab bar) ====== */
+.role-btn--wide {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.family-code {
+  font-family: "Archivo Black", sans-serif;
+  font-size: 42px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 18px 14px;
+  border-radius: 18px;
+  background: var(--c-yellow);
+  color: var(--c-ink);
+  width: 100%;
+  user-select: all;
+  margin: 4px 0;
+}
+.family-code-input {
+  width: 100%;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 32px;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 16px 12px;
+  border-radius: 16px;
+  border: 0;
+  background: rgba(0,0,0,0.08);
+  color: var(--c-ink);
+  outline: none;
+}
+.family-code-input:focus { box-shadow: 0 0 0 2px var(--c-ink); }
+
+.family-bar {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.06);
+}
+.family-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.family-bar-code {
+  font-family: "Archivo Black", sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.1em;
+}
+.family-bar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .family-bar { flex-direction: column; align-items: stretch; }
+  .family-bar-actions { justify-content: flex-end; }
+  .family-code { font-size: 32px; }
+  .family-code-input { font-size: 26px; }
+}
+
+/* ====== Sync indicator (subtle border-ish hint) ====== */
+body[data-sync="syncing"] .brand-mark { animation: sync-pulse 1.2s ease-in-out infinite; }
+body[data-sync="error"]   .brand-mark { background: #a01818; color: #fff; }
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
